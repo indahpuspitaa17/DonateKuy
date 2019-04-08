@@ -16,6 +16,21 @@ export class AppComponent {
       icon: 'home'
     },
     {
+      title: 'Profile',
+      url: '/profile',
+      icon: 'contact'
+    },
+    {
+      title: 'Donasi',
+      url: '/donasi',
+      icon: 'wallet'
+    },
+    {
+      title: 'Kategori',
+      url: '/kategori',
+      icon: 'albums'
+    },
+    {
       title: 'List',
       url: '/list',
       icon: 'list'

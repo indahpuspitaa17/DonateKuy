@@ -15,7 +15,8 @@ const routes: Routes = [
     path: 'list',
     loadChildren: './list/list.module#ListPageModule'
   },  { path: 'donasi', loadChildren: './donasi/donasi.module#DonasiPageModule' },
-  { path: 'kategori', loadChildren: './kategori/kategori.module#KategoriPageModule' }
+  { path: 'kategori', loadChildren: './kategori/kategori.module#KategoriPageModule' },
+  { path: 'profile', loadChildren: './profile/profile.module#ProfilePageModule' }
 
 ];
 
