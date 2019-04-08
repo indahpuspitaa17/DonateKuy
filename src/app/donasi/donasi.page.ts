@@ -11,5 +11,4 @@ export class DonasiPage implements OnInit {
 
   ngOnInit() {
   }
-
 }
