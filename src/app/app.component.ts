@@ -1,39 +1,57 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 
-import { Platform } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
+import { Platform, MenuController, Nav } from 'ionic-angular';
+
+import { HelloIonicPage } from '../pages/hello-ionic/hello-ionic';
+import { ListPage } from '../pages/list/list';
+import { DonasiPage } from '../pages/donasi/donasi';
+import { QnAPage } from '../pages/qn-a/qn-a';
+
+
+import { StatusBar } from '@ionic-native/status-bar';
+import { SplashScreen } from '@ionic-native/splash-screen';
+
 
 @Component({
-  selector: 'app-root',
-  templateUrl: 'app.component.html'
+  templateUrl: 'app.html'
 })
-export class AppComponent {
-  public appPages = [
-    {
-      title: 'Home',
-      url: '/home',
-      icon: 'home'
-    },
-    {
-      title: 'List',
-      url: '/list',
-      icon: 'list'
-    }
-  ];
+export class MyApp {
+  @ViewChild(Nav) nav: Nav;
+
+  // make HelloIonicPage the root (or first) page
+  rootPage = HelloIonicPage;
+  pages: Array<{title: string, component: any}>;
 
   constructor(
-    private platform: Platform,
-    private splashScreen: SplashScreen,
-    private statusBar: StatusBar
+    public platform: Platform,
+    public menu: MenuController,
+    public statusBar: StatusBar,
+    public splashScreen: SplashScreen
   ) {
     this.initializeApp();
+
+    // set our app's pages
+    this.pages = [
+      { title: 'Hello Ionic', component: HelloIonicPage },
+      { title: 'List', component: ListPage },
+      { title: 'Donasi', component: DonasiPage},
+      { title: 'QnA', component: QnAPage}
+    ];
   }
 
   initializeApp() {
     this.platform.ready().then(() => {
+      // Okay, so the platform is ready and our plugins are available.
+      // Here you can do any higher level native things you might need.
       this.statusBar.styleDefault();
       this.splashScreen.hide();
     });
+  }
+
+  openPage(page) {
+    // close the menu when clicking a link from the menu
+    this.menu.close();
+    // navigate to the new page if it is not the current page
+    this.nav.setRoot(page.component);
   }
 }
