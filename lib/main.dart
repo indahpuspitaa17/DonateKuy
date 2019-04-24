@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:carousel_pro/carousel_pro.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -289,22 +289,19 @@ class HomePage extends StatelessWidget {
         ),
         body: ListView(
           children: <Widget>[
-            CarouselSlider(
-              height: 400.0,
-              items: [1, 2, 3, 4, 5].map((i) {
-                return Builder(
-                  builder: (BuildContext context) {
-                    return Container(
-                      width: MediaQuery.of(context).size.width,
-                      decoration: BoxDecoration(color: Colors.amber),
-                      child: Text(
-                        'Slide $i',
-                        style: TextStyle(fontSize: 16.0),
-                      )
-                    );
-                  },
-                );
-              }).toList(),
+            SizedBox(
+              height: 240,
+              width: MediaQuery.of(context).size.width,
+              child: Carousel(
+                images: List.generate(3, (i){
+                  return ExactAssetImage('images/carousel-$i.jpg');
+                }),
+                dotSize: 4.0,
+                dotSpacing: 15.0,
+                dotColor: Colors.lightGreenAccent,
+                indicatorBgPadding: 5.0,
+                dotBgColor: Colors.purple.withOpacity(0.5),
+              ),
             ),
           ],
         ),
@@ -329,6 +326,18 @@ class HomePage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => page),
           );
         });
+  }
+}
+
+class ImageCarousel extends StatefulWidget {
+  @override
+  _ImageCarouselState createState() => _ImageCarouselState();
+}
+
+class _ImageCarouselState extends State<ImageCarousel> {
+  @override
+  Widget build(BuildContext context) {
+    return null;
   }
 }
 
