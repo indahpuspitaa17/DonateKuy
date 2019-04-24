@@ -262,8 +262,7 @@ class HomePage extends StatelessWidget {
       ),
     );
     Widget addDonationFAB = FloatingActionButton(
-      backgroundColor: Theme.of(context).primaryColor,
-      foregroundColor: Colors.white,
+      backgroundColor: Theme.of(context).accentColor,
       child: Icon(Icons.add),
       onPressed: () {
         Navigator.push(
@@ -272,7 +271,45 @@ class HomePage extends StatelessWidget {
         );
       },
     );
-    Widget homePageBody;
+    Widget homePageBody = ListView(
+      children: <Widget>[
+        SizedBox(
+          height: 240,
+          width: MediaQuery.of(context).size.width,
+          child: Carousel(
+            images: List.generate(3, (i) {
+              return ExactAssetImage('images/carousel-$i.jpg');
+            }),
+            autoplay: false,
+            animationCurve: Curves.fastOutSlowIn,
+            dotSize: 4.0,
+            dotSpacing: 12.0,
+            dotColor: Colors.white,
+            indicatorBgPadding: 6.0,
+            dotBgColor: Color.fromRGBO(0, 0, 0, 0),
+          ),
+        ),
+        Container(
+          height: 300.0,
+          padding: EdgeInsets.all(18.0),
+          child: GridView.builder(
+              itemCount: 20,
+              gridDelegate: new SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3),
+              itemBuilder: (BuildContext context, int index) {
+                return new GestureDetector(
+                  child: new Card(
+                    elevation: 5.0,
+                    child: new Container(
+                      alignment: Alignment.center,
+                      child: new Text('Item $index'),
+                    ),
+                  ),
+                );
+              }),
+        ),
+      ],
+    );
 
     return MaterialApp(
       title: 'DonateKuy',
@@ -287,24 +324,7 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
-        body: ListView(
-          children: <Widget>[
-            SizedBox(
-              height: 240,
-              width: MediaQuery.of(context).size.width,
-              child: Carousel(
-                images: List.generate(3, (i){
-                  return ExactAssetImage('images/carousel-$i.jpg');
-                }),
-                dotSize: 4.0,
-                dotSpacing: 15.0,
-                dotColor: Colors.lightGreenAccent,
-                indicatorBgPadding: 5.0,
-                dotBgColor: Colors.purple.withOpacity(0.5),
-              ),
-            ),
-          ],
-        ),
+        body: homePageBody,
         drawer: mainDrawer,
         floatingActionButton: addDonationFAB,
       ),
