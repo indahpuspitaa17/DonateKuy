@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import './home.dart';
 import 'package:carousel_pro/carousel_pro.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sql.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -9,6 +11,13 @@ void main() {
       '/': (context) => LoginPage(),
     },
   ));
+  createDatabase() async {
+    String databasesPath = await getDatabasesPath();
+  String dbPath = join(databasesPath, 'my.db');
+
+  var database = await openDatabase(dbPath, version: 1, onCreate: populateDb);
+  return database;
+  }
 }
 
 ThemeData myTheme() {
