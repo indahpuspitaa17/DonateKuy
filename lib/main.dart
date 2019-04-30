@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
 import './home.dart';
-import 'package:carousel_pro/carousel_pro.dart';
+import './register.dart';
+import './theme.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -11,39 +15,10 @@ void main() {
   ));
 }
 
-ThemeData myTheme() {
-  return ThemeData(
-    primaryColor: Colors.green,
-    primaryColorLight: Colors.green[300],
-    primaryColorDark: Colors.green[600],
-    accentColor: Colors.amberAccent,
-    fontFamily: 'ProductSans',
-    textTheme: TextTheme(
-      headline: TextStyle(fontSize: 72.0, fontWeight: FontWeight.bold),
-      title: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
-      body1: TextStyle(fontSize: 14.0),
-    ),
-  );
-}
-
 class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      onGenerateRoute: (settings) {
-        if (settings.name == HomePage.routeName) {
-          final LoginArguments args = settings.arguments;
-
-          return MaterialPageRoute(
-            builder: (context) {
-              return HomePage(
-                username: args.username,
-                password: args.password,
-              );
-            },
-          );
-        }
-      },
       title: 'Login Page',
       theme: myTheme(),
       home: Scaffold(
@@ -76,12 +51,6 @@ class LoginPage extends StatelessWidget {
   }
 }
 
-class LoginArguments {
-  final String username;
-  final String password;
-  LoginArguments(this.username, this.password);
-}
-
 class LoginForm extends StatefulWidget {
   @override
   LoginFormState createState() => LoginFormState();
@@ -89,8 +58,26 @@ class LoginForm extends StatefulWidget {
 
 class LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  TextEditingController _emailController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
+  String loginMsg = '';
+
+  void _performLogin() async {
+    final response =
+        await http.post("http://192.168.0.6/donatekuy/login.php", body: {
+      "email": _emailController.text,
+      "password": _passwordController.text,
+    });
+    var datauser = json.decode(response.body);
+    if (datauser.length == 0) {
+      setState(() {
+        loginMsg = 'Email and password do not match';
+      });
+    } else {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => HomePage(userData: datauser)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,14 +86,13 @@ class LoginFormState extends State<LoginForm> {
       child: Column(
         children: <Widget>[
           TextFormField(
-            controller: _usernameController,
+            keyboardType: TextInputType.emailAddress,
+            controller: _emailController,
             validator: (value) {
-              if (value.isEmpty) return 'Please enter a username';
-              if (value.length < 5)
-                return 'Username must be at least 5 characters long';
+              if (value.isEmpty) return 'Please enter an email';
             },
             decoration: InputDecoration(
-              labelText: 'Username',
+              labelText: 'Email',
               contentPadding: EdgeInsets.all(16.0),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -122,8 +108,6 @@ class LoginFormState extends State<LoginForm> {
             obscureText: true,
             validator: (value) {
               if (value.isEmpty) return 'Please enter a password';
-              if (value.length < 5)
-                return 'Password must be at least 5 characters long';
             },
             decoration: InputDecoration(
               labelText: 'Password',
@@ -133,43 +117,56 @@ class LoginFormState extends State<LoginForm> {
               ),
             ),
           ),
-          InkWell(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 32.0, horizontal: 32.0),
-              child: ButtonTheme(
-                minWidth: 600,
-                height: 48.0,
-                child: RaisedButton(
-                  onPressed: () {
-                    if (_formKey.currentState.validate()) {
-                      _performLogin();
-                    }
-                  },
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22.0)),
-                  child: Text(
-                    'LOG IN',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  color: Theme.of(context).primaryColor,
+          SizedBox(
+            height: 40.0,
+            child: Center(
+              child: Text(
+                '$loginMsg',
+                style: TextStyle(
+                  fontSize: 12.0,
+                  color: Colors.red[400],
                 ),
+              ),
+            )),
+          InkWell(
+            child: ButtonTheme(
+              minWidth: 300,
+              height: 48.0,
+              child: RaisedButton(
+                onPressed: () {
+                  if (_formKey.currentState.validate()) {
+                    _performLogin();
+                  }
+                },
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22.0)),
+                child: Text(
+                  'LOG IN',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                color: Theme.of(context).primaryColor,
               ),
             ),
           ),
+          SizedBox(
+            height: 30.0,
+          ),
+          FlatButton(
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => RegisterPage()));
+            },
+            child: Text(
+              'Sign up for a new account',
+              style: TextStyle(
+                color: Colors.grey,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          )
         ],
       ),
-    );
-  }
-
-  void _performLogin() {
-    String username = _usernameController.text;
-    String password = _passwordController.text;
-    Navigator.pushNamed(
-      context,
-      HomePage.routeName,
-      arguments: LoginArguments(username, password),
     );
   }
 }

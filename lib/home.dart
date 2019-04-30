@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import './theme.dart';
 import './main.dart';
 import './donation.dart';
 import './profile.dart';
 import './adddonation.dart';
 
-class HomePage extends StatelessWidget {
-  static const routeName = '/homepage';
-  final String username;
-  final String password;
+class HomePage extends StatefulWidget {
+  final List userData;
+  HomePage({this.userData});
+  _HomePageState createState() => _HomePageState(userData: userData);
+}
 
-  const HomePage({
-    Key key,
-    @required this.username,
-    @required this.password,
-  }) : super(key: key);
+class _HomePageState extends State<HomePage> {
+  final List userData;
+  _HomePageState({this.userData});
+
+  Future<List> getCategories() async {
+    final response =
+        await http.get("http://192.168.0.6/donatekuy/getcategories.php");
+    return json.decode(response.body);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +73,7 @@ class HomePage extends StatelessWidget {
                               width: 16,
                             ),
                             Text(
-                              '$username',
+                              userData[0]['name'],
                               style: TextStyle(
                                 fontSize: 20.0,
                                 color: Colors.white,
@@ -76,8 +85,11 @@ class HomePage extends StatelessWidget {
                       SizedBox(
                         width: 40.0,
                         height: 40.0,
-                        child:
-                            Icon(Icons.arrow_forward_ios, color: Colors.white),
+                        child: Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 20.0,
+                        ),
                       ),
                     ],
                   ),
@@ -85,7 +97,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
-          _buildDrawerTile('Donasi', context, DonationPage()),
+          _buildDrawerTile('Your Donation', context, DonationPage()),
           _buildDrawerTile('Q&A', context, DonationPage()),
           _buildDrawerTile('Settings', context, DonationPage()),
           _buildDrawerTile('About', context, DonationPage()),
@@ -102,7 +114,6 @@ class HomePage extends StatelessWidget {
         );
       },
     );
-    
 
     return MaterialApp(
       title: 'DonateKuy',
@@ -118,7 +129,17 @@ class HomePage extends StatelessWidget {
           ],
         ),
         drawer: mainDrawer,
-        body: Center(child: Text('Hello World')),
+        body: FutureBuilder<List>(
+          future: getCategories(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Something went wrong.'));
+            }
+            return snapshot.hasData
+                ? CategoryGrid(list: snapshot.data)
+                : Center(child: CircularProgressIndicator());
+          },
+        ),
         floatingActionButton: addDonationFAB,
       ),
     );
@@ -139,5 +160,58 @@ class HomePage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => page),
           );
         });
+  }
+}
+
+class CategoryGrid extends StatelessWidget {
+  final List list;
+  CategoryGrid({this.list});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(14.0),
+      child: GridView.builder(
+        gridDelegate:
+            SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 14.0,
+              mainAxisSpacing: 14.0
+            ),
+        itemCount: list == null ? 0 : list.length,
+        itemBuilder: (context, i) {
+          return GestureDetector(
+            onTap: (){
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AddDonationPage())
+              );
+            },
+            child: InkWell(
+              child: Card(
+                elevation: 3.0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0)),
+                child: Column(
+                  children: <Widget>[
+                    SizedBox(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10.0),
+                          topRight: Radius.circular(10.0),
+                        ),
+                        child: Image.asset('images/carousel-2.jpg'),
+                      ),
+                    ),
+                    Padding(padding: EdgeInsets.symmetric(vertical: 4),),
+                    Text(list[i]['name']),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
