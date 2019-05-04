@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:carousel_pro/carousel_pro.dart';
 import 'package:http/http.dart' as http;
 import './theme.dart';
-import './main.dart';
 import './donation.dart';
 import './profile.dart';
 import './adddonation.dart';
@@ -19,9 +19,10 @@ class _HomePageState extends State<HomePage> {
   _HomePageState({this.userData});
 
   Future<List> getCategories() async {
-    final response =
-        await http.get("http://192.168.0.6/donatekuy/getcategories.php");
-    return json.decode(response.body);
+    final String url1 = '192.168.0.8';
+    final response = await http.get("http://$url1/donatekuy/getcategories.php");
+    List list = json.decode(response.body);
+    return list;
   }
 
   @override
@@ -50,7 +51,9 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ProfilePage()),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              ProfilePage(userData: userData)),
                     );
                   },
                   child: Row(
@@ -63,10 +66,7 @@ class _HomePageState extends State<HomePage> {
                               height: 64,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(32),
-                                child: Image.asset(
-                                  'images/profile.jpg',
-                                  fit: BoxFit.fill,
-                                ),
+                                child: Image.network('http://192.168.0.8/donatekuy/profile_pictures/${userData[0]['avatar_image']}')
                               ),
                             ),
                             SizedBox(
@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
                             Text(
                               userData[0]['name'],
                               style: TextStyle(
-                                fontSize: 20.0,
+                                fontSize: 18.0,
                                 color: Colors.white,
                               ),
                             ),
@@ -104,16 +104,6 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-    Widget addDonationFAB = FloatingActionButton(
-      backgroundColor: Theme.of(context).accentColor,
-      child: Icon(Icons.add),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => AddDonationPage()),
-        );
-      },
-    );
 
     return MaterialApp(
       title: 'DonateKuy',
@@ -126,21 +116,51 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.search),
               onPressed: () {},
             ),
+            Builder(builder: (context) {
+              return IconButton(
+                tooltip: 'Add Donation',
+                icon: Icon(Icons.add_box),
+                onPressed: () {
+                  _navToAddDonation(context);
+                },
+              );
+            }),
           ],
         ),
         drawer: mainDrawer,
-        body: FutureBuilder<List>(
-          future: getCategories(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(child: Text('Something went wrong.'));
-            }
-            return snapshot.hasData
-                ? CategoryGrid(list: snapshot.data)
-                : Center(child: CircularProgressIndicator());
-          },
+        body: ListView(
+          children: <Widget>[
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: 250,
+              child: Carousel(
+                autoplay: false,
+                images: [
+                  ExactAssetImage('images/carousel-0.jpg'),
+                  ExactAssetImage('images/carousel-1.jpg'),
+                  ExactAssetImage('images/carousel-2.jpg'),
+                ],
+                dotSize: 4,
+                dotSpacing: 12,
+                indicatorBgPadding: 6,
+              ),
+            ),
+            ListView.builder(
+              physics: ScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: 20,
+              itemBuilder: (context, i) {
+                return Card(
+                  child: ListTile(
+                    leading: Icon(Icons.grid_on),
+                    title: Text('Item $i'),
+                    trailing: Icon(Icons.arrow_forward_ios),
+                  ),
+                );
+              },
+            )
+          ],
         ),
-        floatingActionButton: addDonationFAB,
       ),
     );
   }
@@ -161,57 +181,17 @@ class _HomePageState extends State<HomePage> {
           );
         });
   }
-}
 
-class CategoryGrid extends StatelessWidget {
-  final List list;
-  CategoryGrid({this.list});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(14.0),
-      child: GridView.builder(
-        gridDelegate:
-            SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 14.0,
-              mainAxisSpacing: 14.0
-            ),
-        itemCount: list == null ? 0 : list.length,
-        itemBuilder: (context, i) {
-          return GestureDetector(
-            onTap: (){
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddDonationPage())
-              );
-            },
-            child: InkWell(
-              child: Card(
-                elevation: 3.0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0)),
-                child: Column(
-                  children: <Widget>[
-                    SizedBox(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(10.0),
-                          topRight: Radius.circular(10.0),
-                        ),
-                        child: Image.asset('images/carousel-2.jpg'),
-                      ),
-                    ),
-                    Padding(padding: EdgeInsets.symmetric(vertical: 4),),
-                    Text(list[i]['name']),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+  _navToAddDonation(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => AddDonationPage(userData: userData)),
     );
+    if (result != null) {
+      Scaffold.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('$result')));
+    }
   }
 }

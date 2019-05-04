@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:async';
 import './home.dart';
 import './register.dart';
 import './theme.dart';
@@ -63,8 +62,9 @@ class LoginFormState extends State<LoginForm> {
   String loginMsg = '';
 
   void _performLogin() async {
+    final String url1 = '192.168.0.8';
     final response =
-        await http.post("http://192.168.0.6/donatekuy/login.php", body: {
+        await http.post("http://$url1/donatekuy/login.php", body: {
       "email": _emailController.text,
       "password": _passwordController.text,
     });
@@ -154,8 +154,7 @@ class LoginFormState extends State<LoginForm> {
           ),
           FlatButton(
             onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => RegisterPage()));
+              _navToRegister(context);
             },
             child: Text(
               'Sign up for a new account',
@@ -168,5 +167,16 @@ class LoginFormState extends State<LoginForm> {
         ],
       ),
     );
+  }
+  _navToRegister(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => RegisterPage()),
+    );
+    if(result != null){
+      Scaffold.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text('$result')));
+    }
   }
 }

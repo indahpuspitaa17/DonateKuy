@@ -9,17 +9,16 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final String url1 = '192.168.0.8';
   final _formKey = GlobalKey<FormState>();
   TextEditingController _fNameCtrl = TextEditingController();
   TextEditingController _lNameCtrl = TextEditingController();
   TextEditingController _emailCtrl = TextEditingController();
   TextEditingController _passCtrl = TextEditingController();
   TextEditingController _phoneCtrl = TextEditingController();
-  String _locProv;
-  String _locReg;
 
   void isEmailUsed() async {
-    final response = await http.post("http://192.168.0.6/donatekuy/email.php",
+    final response = await http.post("http://$url1/donatekuy/email.php",
         body: {"email": _emailCtrl.text});
     var datauser = json.decode(response.body);
     if (datauser.length > 0) {
@@ -40,12 +39,12 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     } else {
       _performRegister();
-      Navigator.pop(context);
+      Navigator.pop(context, 'Register success!');
     }
   }
 
   void _performRegister() {
-    http.post("http://192.168.0.6/donatekuy/register.php", body: {
+    http.post("http://$url1/donatekuy/register.php", body: {
       "first_name": _fNameCtrl.text,
       "last_name": _lNameCtrl.text,
       "email": _emailCtrl.text,
@@ -113,6 +112,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: _emailCtrl,
                       validator: (value) {
                         if (value.isEmpty) return 'Please enter your email';
+                        if (!isValidEmail(value)) return 'Please enter a valid email';
                       },
                       decoration: InputDecoration(
                         labelText: 'Email',
@@ -170,7 +170,12 @@ class _RegisterPageState extends State<RegisterPage> {
           icon: Icon(Icons.check),
           label: Text('Sign Up'),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
+  }
+  bool isValidEmail(String input){
+    final RegExp regex = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$");
+    return regex.hasMatch(input);
   }
 }
