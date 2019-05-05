@@ -5,10 +5,11 @@ import 'package:http/http.dart' as http;
 import './theme.dart';
 import './editprofile.dart';
 
+final String url1 = '192.168.0.20';
+
 class ProfilePage extends StatelessWidget {
   final List userData;
   ProfilePage({this.userData});
-  final String url1 = '192.168.0.8';
 
   Future<List<ItemsByUser>> getItemByUser() async {
     //get items donated by a user (userData)
@@ -55,9 +56,15 @@ class ProfilePage extends StatelessWidget {
                 Container(
                   width: 130.0,
                   height: 130.0,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(65.0),
-                    child: Image.network('http://$url1/donatekuy/profile_pictures/${userData[0]['avatar_image']}'),
+                  child: GestureDetector(
+                    onTap: (){
+                      //change avatar
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(65.0),
+                      child: Image.network(
+                          'http://$url1/donatekuy/profile_pictures/${userData[0]['avatar_image']}'),
+                    ),
                   ),
                   decoration: BoxDecoration(
                     boxShadow: <BoxShadow>[
@@ -96,7 +103,11 @@ class ProfilePage extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Icon(Icons.phone, color: Colors.grey[700], size: 18,),
+                        Icon(
+                          Icons.phone,
+                          color: Colors.grey[700],
+                          size: 18,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           '${userData[0]['phone']}',
@@ -143,7 +154,7 @@ class ProfilePage extends StatelessWidget {
 }
 
 class ItemsByUser {
-  final String name, category, addedAt, itemCond, quantity, desc, delivMethod;
+  final String name, category, addedAt, itemCond, quantity, desc, delivMethod, image;
   ItemsByUser({
     this.name,
     this.category,
@@ -152,6 +163,7 @@ class ItemsByUser {
     this.quantity,
     this.desc,
     this.delivMethod,
+    this.image,
   });
   factory ItemsByUser.fromJson(Map<String, dynamic> jsonData) {
     return ItemsByUser(
@@ -162,6 +174,7 @@ class ItemsByUser {
       quantity: jsonData['quantity'],
       desc: jsonData['description'],
       delivMethod: jsonData['deliv_method'],
+      image: jsonData['image'],
     );
   }
 }
@@ -190,15 +203,17 @@ class RecentItemView extends StatelessWidget {
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         child: ListTile(
-          leading: Image.asset(
-            'images/logo-icon.png',
-            width: 40,
-            fit: BoxFit.contain,
+          leading: Image.network(
+            'http://$url1/donatekuy/images/${item.image}',
+            fit: BoxFit.fill,
+            height: 40,
           ),
           title: Text(item.name),
           subtitle: Text(item.addedAt),
           trailing: Icon(Icons.arrow_forward_ios, size: 20),
-          onTap: () {},
+          onTap: () {
+            //navigate to corresponding item page
+          },
         ),
       ),
     );

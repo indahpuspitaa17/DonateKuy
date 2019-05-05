@@ -1,13 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart';
 import './theme.dart';
-import 'package:image_picker/image_picker.dart';
+import './additemimage.dart';
 
 class AddDonationPage extends StatefulWidget {
   final List userData;
@@ -19,7 +15,7 @@ class AddDonationPage extends StatefulWidget {
 }
 
 class _AddDonationPageState extends State<AddDonationPage> {
-  final String url1 = '192.168.0.8';
+  final String url1 = '192.168.0.20';
   final List userData;
   _AddDonationPageState({this.userData});
   final _formKey = GlobalKey<FormState>();
@@ -31,81 +27,6 @@ class _AddDonationPageState extends State<AddDonationPage> {
   String _condition = '';
   final List<String> _methods = <String>['', 'COD', 'Kurir'];
   String _method = '';
-
-  File _image;
-
-  Future getImageGallery() async {
-    var imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
-    setState(() {
-      _image = imageFile;
-    });
-  }
-
-  Future getImageCamera() async {
-    var imageFile = await ImagePicker.pickImage(source: ImageSource.camera);
-    setState(() {
-      _image = imageFile;
-    });
-  }
-
-  Future uploadImage(File imageFile, BuildContext context) async {
-    var stream =
-        new http.ByteStream(DelegatingStream.typed(imageFile.openRead()));
-    var length = await imageFile.length();
-    var uri = Uri.parse("http://$url1/donatekuy/additemimage.php");
-
-    var request = new http.MultipartRequest("POST", uri);
-
-    var multipartFile = new http.MultipartFile("image", stream, length,
-        filename: basename(imageFile.path));
-    request.fields['userId'] = userData[0]['user_id'];
-    request.fields['itemName'] = _nameCtrl.text;
-    request.files.add(multipartFile);
-
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      print('Image uploaded');
-    } else {
-      print('Failed to upload');
-    }
-  }
-
-  _imagePickerDialog(BuildContext context) async {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Pick a source'),
-            content: Container(
-              width: 200,
-              height: 100,
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: <Widget>[
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.image),
-                    title: Text('Gallery'),
-                    onTap: () {
-                      getImageGallery();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.camera_alt),
-                    title: Text('Camera'),
-                    onTap: () {
-                      getImageCamera();
-                      Navigator.pop(context);
-                    },
-                  )
-                ],
-              ),
-            ),
-          );
-        });
-  }
 
   Future<List<Category>> _getCategory() async {
     var response = await http.get("http://$url1/donatekuy/getcategories.php");
@@ -305,49 +226,6 @@ class _AddDonationPageState extends State<AddDonationPage> {
                         );
                       },
                     ),
-                    SizedBox(height: 22),
-                    dividerWithText('I M A G E'),
-                    SizedBox(height: 22),
-                    Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                            border: Border.all(width: 1, color: Colors.grey)),
-                        child: _image == null ?
-                          Center(
-                            child: IconButton(
-                              icon: Icon(Icons.add_a_photo),
-                              color: Colors.grey,
-                              onPressed: () {
-                                _imagePickerDialog(context);
-                              },
-                            )
-                          ) :
-                          Stack(
-                            children: <Widget>[
-                              Image.file(_image),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: IconButton(
-                                  icon: Icon(Icons.close),
-                                  onPressed: (){
-                                    setState(() {
-                                     _image = null;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          )
-                    ),
-                    SizedBox(height: 10),
-                    OutlineButton(
-                      onPressed: (){
-                        uploadImage(_image, context);
-                      },
-                      child: Text('Upload image'),
-                    ),
                     SizedBox(height: 80),
                   ],
                 ),
@@ -356,12 +234,21 @@ class _AddDonationPageState extends State<AddDonationPage> {
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          icon: Icon(Icons.file_upload),
-          label: Text('Add Donation'),
-          onPressed: () {
-            if (_formKey.currentState.validate() && _image!=null) {
+          icon: Icon(Icons.image),
+          label: Text('Add Image'),
+          onPressed: () async {
+            if (_formKey.currentState.validate()) {
               _performAddItem();
-              Navigator.pop(context, '${_nameCtrl.text} added successfully.');
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => AddItemImage(userData: userData, itemName: _nameCtrl.text,)),
+              );
+              if(result){
+                Navigator.pop(context, '${_nameCtrl.text} added successfully');
+              } else {
+                print('image upload failed');
+              }
             }
           },
         ),

@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   _HomePageState({this.userData});
 
   Future<List> getCategories() async {
-    final String url1 = '192.168.0.8';
+    final String url1 = '192.168.0.20';
     final response = await http.get("http://$url1/donatekuy/getcategories.php");
     List list = json.decode(response.body);
     return list;
@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
                               height: 64,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(32),
-                                child: Image.network('http://192.168.0.8/donatekuy/profile_pictures/${userData[0]['avatar_image']}')
+                                child: Image.network('http://192.168.0.20/donatekuy/profile_pictures/${userData[0]['avatar_image']}')
                               ),
                             ),
                             SizedBox(
