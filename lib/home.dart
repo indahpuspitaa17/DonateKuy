@@ -1,28 +1,90 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:donatekuyv2/auth_provider.dart';
+import 'package:donatekuyv2/itemsbycategory.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:convert';
-import 'package:carousel_pro/carousel_pro.dart';
-import 'package:http/http.dart' as http;
-import './theme.dart';
-import './donation.dart';
-import './profile.dart';
-import './adddonation.dart';
+import 'adddonation.dart';
+import 'theme.dart';
+import 'profile.dart';
 
 class HomePage extends StatefulWidget {
-  final List userData;
-  HomePage({this.userData});
-  _HomePageState createState() => _HomePageState(userData: userData);
+  final VoidCallback onSignedOut;
+  final String userId;
+  HomePage({Key key, this.onSignedOut, this.userId}) : super(key: key);
+
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  final List userData;
-  _HomePageState({this.userData});
+  void _signOut() async {
+    try {
+      var auth = AuthProvider.of(context).auth;
+      await auth.signOut();
+      widget.onSignedOut();
+    } catch (e) {
+      _showError(e);
+    }
+  }
 
-  Future<List> getCategories() async {
-    final String url1 = '192.168.0.20';
-    final response = await http.get("http://$url1/donatekuy/getcategories.php");
-    List list = json.decode(response.body);
-    return list;
+  void _showError(dynamic e) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text(e.message),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Close'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
+  }
+
+  Row profileHeader(dynamic data) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: Image.network(
+                    data['avatar'],
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 16,
+              ),
+              Text(
+                data['firstName'],
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: 40.0,
+          height: 40.0,
+          child: Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.white,
+            size: 20.0,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -35,7 +97,7 @@ class _HomePageState extends State<HomePage> {
             height: 180,
             child: DrawerHeader(
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
+                color: myTheme().primaryColor,
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: Color(0x40000000),
@@ -51,77 +113,83 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              ProfilePage(userData: userData)),
+                      MaterialPageRoute(builder: (context) => ProfilePage(profileId: widget.userId)),
                     );
                   },
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Row(
-                          children: <Widget>[
-                            SizedBox(
-                              width: 64,
-                              height: 64,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(32),
-                                child: Image.network('http://192.168.0.20/donatekuy/profile_pictures/${userData[0]['avatar_image']}')
-                              ),
-                            ),
-                            SizedBox(
-                              width: 16,
-                            ),
-                            Text(
-                              userData[0]['name'],
-                              style: TextStyle(
-                                fontSize: 18.0,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 40.0,
-                        height: 40.0,
-                        child: Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white,
-                          size: 20.0,
-                        ),
-                      ),
-                    ],
+                  child: StreamBuilder(
+                    stream: Firestore.instance
+                        .collection('users')
+                        .document('${widget.userId}')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                      if (snapshot.hasError)
+                        return Text('Error!');
+                      else if (snapshot.data == null)
+                        return Text(
+                          'Loading...',
+                          style: TextStyle(color: Colors.white),
+                        );
+                      else
+                        return profileHeader(snapshot.data);
+                    },
                   ),
                 ),
               ),
             ),
           ),
-          _buildDrawerTile('Your Donation', context, DonationPage()),
-          _buildDrawerTile('Q&A', context, DonationPage()),
-          _buildDrawerTile('Settings', context, DonationPage()),
-          _buildDrawerTile('About', context, DonationPage()),
+          ListTile(
+            title: Text(
+              'Log out',
+              style: TextStyle(fontSize: 16.0, color: Colors.black),
+            ),
+            onTap: _signOut,
+          ),
         ],
       ),
     );
 
+    Widget dividerWithText(String value) {
+      return Row(
+        children: <Widget>[
+          Expanded(
+              child: Divider(
+            color: Colors.grey[600],
+          )),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14),
+            child: Text('$value', style: TextStyle(color: Colors.grey[600])),
+          ),
+          Expanded(
+              child: Divider(
+            color: Colors.grey[600],
+          )),
+        ],
+      );
+    }
+
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'DonateKuy',
       theme: myTheme(),
       home: Scaffold(
         appBar: AppBar(
           title: Text('DonateKuy'),
           actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.search),
-              onPressed: () {},
-            ),
             Builder(builder: (context) {
               return IconButton(
                 tooltip: 'Add Donation',
                 icon: Icon(Icons.add_box),
-                onPressed: () {
-                  _navToAddDonation(context);
+                onPressed: () async {
+                  final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => AddDonationPage()));
+                  if (result != null) {
+                    Scaffold.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(SnackBar(content: Text('$result')));
+                  }
                 },
               );
             }),
@@ -130,68 +198,61 @@ class _HomePageState extends State<HomePage> {
         drawer: mainDrawer,
         body: ListView(
           children: <Widget>[
-            SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: 250,
-              child: Carousel(
-                autoplay: false,
-                images: [
-                  ExactAssetImage('images/carousel-0.jpg'),
-                  ExactAssetImage('images/carousel-1.jpg'),
-                  ExactAssetImage('images/carousel-2.jpg'),
-                ],
-                dotSize: 4,
-                dotSpacing: 12,
-                indicatorBgPadding: 6,
-              ),
+            AspectRatio(
+              aspectRatio: 16/9,
+              child: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Image.asset(
+                    'images/carousel-0.jpg',
+                    fit: BoxFit.cover,
+                  )),
             ),
-            ListView.builder(
-              physics: ScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: 20,
-              itemBuilder: (context, i) {
-                return Card(
-                  child: ListTile(
-                    leading: Icon(Icons.grid_on),
-                    title: Text('Item $i'),
-                    trailing: Icon(Icons.arrow_forward_ios),
-                  ),
+            SizedBox(height: 16),
+            dividerWithText('Browse Categories'),
+            SizedBox(height: 16),
+            StreamBuilder(
+              stream: Firestore.instance
+                  .collection('categories')
+                  .orderBy('name')
+                  .snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (!snapshot.hasData || snapshot.data == null)
+                  return Center(child: CircularProgressIndicator());
+                return ListView(
+                  shrinkWrap: true,
+                  physics: ScrollPhysics(),
+                  children: snapshot.data.documents.map((document) {
+                    return Container(
+                      padding:
+                          EdgeInsets.symmetric(vertical: 2, horizontal: 18),
+                      child: Card(
+                        elevation: 2.4,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.widgets,
+                            color: Colors.grey,
+                          ),
+                          trailing: Icon(Icons.chevron_right),
+                          title: Text(document['name']),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => ItemsByCategoryPage(category: document['name']))
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 );
               },
-            )
+            ),
+            SizedBox(height: 20),
           ],
         ),
       ),
     );
-  }
-
-  ListTile _buildDrawerTile(String label, BuildContext context, Widget page) {
-    return ListTile(
-        title: Text(
-          label,
-          style: TextStyle(
-            fontSize: 16.0,
-            color: Theme.of(context).primaryColor,
-          ),
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => page),
-          );
-        });
-  }
-
-  _navToAddDonation(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => AddDonationPage(userData: userData)),
-    );
-    if (result != null) {
-      Scaffold.of(context)
-        ..removeCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('$result')));
-    }
   }
 }

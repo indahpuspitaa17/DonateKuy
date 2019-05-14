@@ -1,56 +1,20 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:donatekuyv2/auth_provider.dart';
 import 'package:flutter/material.dart';
-import './theme.dart';
+
+import 'theme.dart';
 
 class RegisterPage extends StatefulWidget {
+  RegisterPage({Key key}) : super(key: key);
+
   _RegisterPageState createState() => _RegisterPageState();
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final String url1 = '192.168.0.8';
-  final _formKey = GlobalKey<FormState>();
-  TextEditingController _fNameCtrl = TextEditingController();
-  TextEditingController _lNameCtrl = TextEditingController();
-  TextEditingController _emailCtrl = TextEditingController();
-  TextEditingController _passCtrl = TextEditingController();
-  TextEditingController _phoneCtrl = TextEditingController();
-
-  void isEmailUsed() async {
-    final response = await http.post("http://$url1/donatekuy/email.php",
-        body: {"email": _emailCtrl.text});
-    var datauser = json.decode(response.body);
-    if (datauser.length > 0) {
-      return showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-              title: Text('Uh oh!'),
-              content: Text('${_emailCtrl.text} is already taken.'),
-              actions: <Widget>[
-                FlatButton(
-                  child: Text('CLOSE'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            ),
-      );
-    } else {
-      _performRegister();
-      Navigator.pop(context, 'Register success!');
-    }
-  }
-
-  void _performRegister() {
-    http.post("http://$url1/donatekuy/register.php", body: {
-      "first_name": _fNameCtrl.text,
-      "last_name": _lNameCtrl.text,
-      "email": _emailCtrl.text,
-      "password": _passCtrl.text,
-      "phone": _phoneCtrl.text,
-    });
-  }
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String _fName, _lName, _email, _password, _phone, _location;
+  final String _avatar =
+      'https://firebasestorage.googleapis.com/v0/b/donatekuy.appspot.com/o/default-avatar.png?alt=media&token=33861c61-c627-4fe1-98a6-4ba0e1e9f935';
 
   @override
   Widget build(BuildContext context) {
@@ -79,10 +43,10 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   children: <Widget>[
                     TextFormField(
-                      controller: _fNameCtrl,
                       validator: (value) {
                         if (value.isEmpty) return 'Please enter your name';
                       },
+                      onSaved: (value) => _fName = value,
                       decoration: InputDecoration(
                         labelText: 'First Name',
                         contentPadding: EdgeInsets.all(16.0),
@@ -93,10 +57,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     Padding(padding: EdgeInsets.symmetric(vertical: 8)),
                     TextFormField(
-                      controller: _lNameCtrl,
                       validator: (value) {
                         if (value.isEmpty) return 'Please enter your name';
                       },
+                      onSaved: (value) => _lName = value,
                       decoration: InputDecoration(
                         labelText: 'Last Name',
                         contentPadding: EdgeInsets.all(16.0),
@@ -108,11 +72,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     Padding(padding: EdgeInsets.symmetric(vertical: 8)),
                     TextFormField(
                       keyboardType: TextInputType.emailAddress,
-                      controller: _emailCtrl,
                       validator: (value) {
                         if (value.isEmpty) return 'Please enter your email';
-                        if (!isValidEmail(value)) return 'Please enter a valid email';
                       },
+                      onSaved: (value) => _email = value,
                       decoration: InputDecoration(
                         labelText: 'Email',
                         contentPadding: EdgeInsets.all(16.0),
@@ -123,13 +86,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     Padding(padding: EdgeInsets.symmetric(vertical: 8)),
                     TextFormField(
-                      controller: _passCtrl,
                       obscureText: true,
                       validator: (value) {
                         if (value.isEmpty) return 'Please enter your password';
                         if (value.length < 5)
                           return 'Password must be more than 5 characters.';
                       },
+                      onSaved: (value) => _password = value,
                       decoration: InputDecoration(
                         labelText: 'Password',
                         contentPadding: EdgeInsets.all(16.0),
@@ -141,11 +104,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     Padding(padding: EdgeInsets.symmetric(vertical: 8)),
                     TextFormField(
                       keyboardType: TextInputType.phone,
-                      controller: _phoneCtrl,
                       validator: (value) {
                         if (value.isEmpty)
                           return 'Please enter your phone number';
                       },
+                      onSaved: (value) => _phone = value,
                       decoration: InputDecoration(
                         labelText: 'Phone',
                         contentPadding: EdgeInsets.all(16.0),
@@ -154,6 +117,46 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                     ),
+                    Padding(padding: EdgeInsets.symmetric(vertical: 8)),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: Firestore.instance
+                          .collection('location')
+                          .orderBy('name')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return Text('Loading...');
+                        List<DropdownMenuItem> locations = [];
+                        for (int i = 0;
+                            i < snapshot.data.documents.length;
+                            i++) {
+                          DocumentSnapshot snap = snapshot.data.documents[i];
+                          locations.add(DropdownMenuItem(
+                            child: Text(snap['name']),
+                            value: snap['name'],
+                          ));
+                        }
+                        return InputDecorator(
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.fromLTRB(16, 3, 16, 3),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            labelText: 'Location',
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton(
+                              items: locations,
+                              onChanged: (value) {
+                                setState(() {
+                                  _location = value;
+                                });
+                              },
+                              value: _location,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    Padding(padding: EdgeInsets.symmetric(vertical: 40)),
                   ],
                 ),
               ),
@@ -161,11 +164,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            if (_formKey.currentState.validate()) {
-              isEmailUsed();
-            }
-          },
+          onPressed: signUp,
           icon: Icon(Icons.check),
           label: Text('Sign Up'),
         ),
@@ -173,8 +172,41 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
-  bool isValidEmail(String input){
-    final RegExp regex = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$");
-    return regex.hasMatch(input);
+
+  Future<void> signUp() async {
+    final _form = _formKey.currentState;
+    if (_form.validate()) {
+      _form.save();
+      try {
+        var auth = AuthProvider.of(context).auth;
+        String userId = await auth.createUserWithEmailAndPassword(
+            _email, _password, _fName, _lName, _phone, _location, _avatar);
+        print('Registered user: $userId');
+        Navigator.pop(context, 'Register success!');
+      } catch (e) {
+        print(e.message);
+        _showError(e);
+        _form.reset();
+      }
+    }
+  }
+
+  void _showError(dynamic e) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Register error'),
+            content: Text(e.message),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Close'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
   }
 }
